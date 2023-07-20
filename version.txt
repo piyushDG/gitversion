@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-1
-=======
-1.2.3
->>>>>>> cff841a (feat(api): Add user authentication)
+1.0.0
