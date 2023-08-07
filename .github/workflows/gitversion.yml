@@ -13,7 +13,17 @@ on:
     - 'hotfix/**'
 
 env:
+  GITVERSION: 'gittools/gitversion:5.10.0-alpine.3.14-6.0'
   MAIN_BRANCHES: ("develop" "main")
+  GITVERSION_TAG_PROPERTY_PULL_REQUESTS: .SemVer
+  GITVERSION_TAG_PROPERTY_DEFAULT: .SemVer
+  GITVERSION_TAG_PROPERTY_DEVELOP: .SemVer
+  GITVERSION_TAG_PROPERTY_RELEASE: .SemVer
+  GITVERSION_TAG_PROPERTY_HOTFIX: .SemVer
+  GITVERSION_TAG_PROPERTY_MAIN: .MajorMinorPatch
+  GITVERSION_REPO_TYPE: SINGLE_APP
+  GITVERSION_CONFIG_SINGLE_APP: '/repo/.cicd/common/.gitversion.yml'
+  GITVERSION_CONFIG_MONOREPO: '/repo/apps/${svc}/.gitversion.yml'
 
 jobs:
   gitversion:
@@ -30,46 +40,31 @@ jobs:
         git checkout develop && git checkout -
 
     - name: Checkout to branch
-      uses: ./apps/semver-yeasy.sh
-      id: checkout
-      with:
-        repo-type: 'MONOREPO'
-        mode: 'checkout'
+      run: . ./.cicd/gitversion.sh checkout
 
     - name: Calculate changed services
       id: calculate_changed_services
-      uses: ./apps/semver-yeasy.sh
-      with:
-        repo-type: 'MONOREPO'
-        mode: 'changed'
+      run: . ./.cicd/gitversion.sh changed
 
-    - name: Calculate service services
+    - name: Calculate versions
       id: calculate_service_versions
-      uses: ./apps/semver-yeasy.sh
       env:
         SEMVERYEASY_CHANGED: ${{ steps.calculate_changed_services.outputs.changed }}
         SEMVERYEASY_CHANGED_SERVICES: ${{ fromJSON(steps.calculate_changed_services.outputs.changed_services) }}
-      with:
-        repo-type: 'MONOREPO'
-        mode: 'calculate-version'
+      run: . ./.cicd/gitversion.sh calculate-version
 
     - name: Update PR description
-      if: ${{ github.event_name == 'pull_request' }}
-      uses: ./apps/semver-yeasy.sh
-      with:
-        repo-type: 'MONOREPO'
-        mode: 'update-pr'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SEMVERY_YEASY_PR_BODY: ${{ fromJSON(steps.calculate_service_versions.outputs.PR_BODY) }}
+      if: ${{ github.event_name == 'pull_request' }}
+      run: . ./.cicd/gitversion.sh update-pr
+
 
     - name: Tag build
       if: ${{ github.event_name == 'push' && (startsWith(steps.calculate_changed_services.outputs.diff_dest, 'release') || startsWith(steps.calculate_changed_services.outputs.diff_dest, 'hotfix') || contains(env.MAIN_BRANCHES, steps.calculate_changed_services.outputs.diff_dest)) }}
-      uses: ./apps/semver-yeasy.sh
-      with:
-        repo-type: 'MONOREPO'
-        mode: 'tag'
       env:
         DIFF_DEST: ${{ steps.calculate_changed_services.outputs.DIFF_DEST }}
         SEMVERYEASY_CHANGED: ${{ steps.calculate_changed_services.outputs.changed }}
         SEMVERYEASY_CHANGED_SERVICES: ${{ fromJSON(steps.calculate_changed_services.outputs.changed_services) }}
+      run: . ./.cicd/gitversion.sh tag
