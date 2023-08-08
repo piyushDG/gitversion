@@ -1,0 +1,7 @@
+[tool.towncrier]
+package = "versioning automate"
+directory = "changelog"
+type = "semver"
+issue_format = "#{issue}"
+issue_link = "https://github.com/piyushDG/gitversion.git/{issue}"
+
