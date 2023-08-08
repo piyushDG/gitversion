@@ -1,0 +1,7 @@
+[towncrier]
+package = "myproject"
+directory = "changelog"
+type = "semver"
+issue_format = "#{issue}"
+issue_link = "https://github.com/myorg/myproject/issues/{issue}"
+
